@@ -21,10 +21,26 @@ func main() {
 		fmt.Println("Failed to bind to port 4221")
 		os.Exit(1)
 	}
-	
-	_, err = l.Accept()
+
+	conn, err := l.Accept()
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
+
+	// get the req
+	req := make([]byte, 1024)
+	_, err = conn.Read(req)
+	if err != nil {
+		fmt.Println("Error receving request: ", err.Error())
+	}
+
+	// create a response
+	resp_t := HTTPResp{
+		Version: "HTTP/1.1",
+		Status:  200,
+		Phrase:  "OK",
+	}
+	resp := resp_t.Format()
+	conn.Write([]byte(resp))
 }
