@@ -39,6 +39,7 @@ func main() {
 	r := req[:n]
 	req_t := ParseReq(string(r))
 
+	fmt.Println(req_t)
 	// create a response
 	var resp_t HTTPResp = HTTPResp{
 		Version: "HTTP/1.1",
@@ -56,6 +57,13 @@ func main() {
 		resp_t.SetHeader("Content-Type", "text/plain")
 		resp_t.SetHeader("Content-Length", fmt.Sprintf("%d", len(url[2])))
 
+	} else if req_t.Target == "/user-agent" {
+		resp_t.Status = 200
+		resp_t.Phrase = "OK"
+		resp_t.Body = req_t.Headers["User-Agent"]
+
+		resp_t.SetHeader("Content-Type", "text/plain")
+		resp_t.SetHeader("Content-Length", fmt.Sprintf("%d", len(resp_t.Body)))
 	} else {
 		resp_t.Status = 404
 		resp_t.Phrase = "Not Found"

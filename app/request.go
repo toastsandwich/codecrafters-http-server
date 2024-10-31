@@ -10,7 +10,7 @@ type HTTPReq struct {
 	Target  string
 	Version string
 	// Headers
-	Headers string
+	Headers map[string]string
 	// Body
 	Body string
 }
@@ -20,18 +20,23 @@ func ParseReq(r string) HTTPReq {
 	rReqLine := strings.Split(r_slc[0], " ")
 	method, target, version := rReqLine[0], rReqLine[1], rReqLine[2]
 
-	rHeaders := r_slc[1]
-	var body string
-	if len(r_slc) > 2 {
-		body = r_slc[2]
+	rmap := make(map[string]string)
+	for _, h := range r_slc[1 : len(r_slc)-1] {
+		pair := strings.Split(h, ": ")
+		if len(pair) == 2 {
+			k := strings.TrimSpace(pair[0])
+			v := strings.TrimSpace(pair[1])
+			rmap[k] = v
+		}
 	}
+	body := r_slc[len(r_slc)-1]
 	return HTTPReq{
 		Method:  method,
 		Target:  target,
 		Version: version,
-
-		Headers: rHeaders,
 		Body:    body,
+		Headers: rmap,
+		// Body:    body,
 	}
 }
 
