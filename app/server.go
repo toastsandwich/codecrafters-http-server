@@ -48,7 +48,7 @@ func main() {
 		resp_t.Phrase = "OK"
 	} else {
 		resp_t.Status = 404
-		resp_t.Phrase = "NOT FOUND"
+		resp_t.Phrase = "Not Found"
 	}
 	resp := resp_t.Format()
 	conn.Write([]byte(resp))
