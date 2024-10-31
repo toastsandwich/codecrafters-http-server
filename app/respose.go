@@ -2,6 +2,7 @@ package main
 
 import "fmt"
 
+// http response struct
 type HTTPResp struct {
 	Version string
 	Status  int

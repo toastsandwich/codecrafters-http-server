@@ -30,16 +30,25 @@ func main() {
 
 	// get the req
 	req := make([]byte, 1024)
-	_, err = conn.Read(req)
+	n, err := conn.Read(req)
 	if err != nil {
 		fmt.Println("Error receving request: ", err.Error())
 	}
 
+	r := req[:n]
+	req_t := ParseReq(string(r))
+
 	// create a response
-	resp_t := HTTPResp{
+	var resp_t HTTPResp = HTTPResp{
 		Version: "HTTP/1.1",
-		Status:  200,
-		Phrase:  "OK",
+	}
+
+	if req_t.Target == "/" {
+		resp_t.Status = 200
+		resp_t.Phrase = "OK"
+	} else {
+		resp_t.Status = 404
+		resp_t.Phrase = "NOT FOUND"
 	}
 	resp := resp_t.Format()
 	conn.Write([]byte(resp))
