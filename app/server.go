@@ -23,12 +23,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		go handleConn(conn)
 	}
+}
 
+func handleConn(conn net.Conn) {
 	// get the req
 	req := make([]byte, 1024)
 	n, err := conn.Read(req)
@@ -39,7 +44,6 @@ func main() {
 	r := req[:n]
 	req_t := ParseReq(string(r))
 
-	fmt.Println(req_t)
 	// create a response
 	var resp_t HTTPResp = HTTPResp{
 		Version: "HTTP/1.1",
