@@ -1,6 +1,8 @@
 package main
 
-import "strings"
+import (
+	"strings"
+)
 
 type HTTPReq struct {
 	// Request line
@@ -14,8 +16,7 @@ type HTTPReq struct {
 }
 
 func ParseReq(r string) HTTPReq {
-	r_slc := strings.Split(r, "\n\r")
-
+	r_slc := strings.Split(r, "\r\n")
 	rReqLine := strings.Split(r_slc[0], " ")
 	method, target, version := rReqLine[0], rReqLine[1], rReqLine[2]
 
