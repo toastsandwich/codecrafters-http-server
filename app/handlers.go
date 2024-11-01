@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -49,12 +52,30 @@ func Home(req HTTPReq, res *HTTPResp) error {
 func Echo(req HTTPReq, res *HTTPResp) error {
 	// get the value from url and send it to resp.Body
 	val := req.URL.Value()
+
+	if req.Header.Get("Accept-Encoding") != nil {
+		buffer := &bytes.Buffer{}
+		z := gzip.NewWriter(buffer)
+
+		_, err := z.Write([]byte(val))
+		if err != nil {
+			return err
+		}
+
+		if err := z.Close(); err != nil {
+			return err
+		}
+		res.SetHeader("Content-Length", fmt.Sprintf("%d", buffer.Len()))
+		res.Body = buffer.String()
+	} else {
+		res.SetHeader("Content-Length", fmt.Sprintf("%d", len(val)))
+		res.Body = val
+
+	}
 	res.Version = req.Version
-	res.Body = val
 	res.Status = 200
 	res.Phrase = "OK"
 	res.SetHeader("Content-Type", "text/plain")
-	res.SetHeader("Content-Length", len(val))
 	return nil
 }
 

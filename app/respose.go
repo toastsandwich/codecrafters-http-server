@@ -39,7 +39,7 @@ func (h HTTPResp) Format() string {
 
 	// Add body if it exists
 	if h.Body != "" {
-		builder.WriteString(h.Body)
+		builder.Write([]byte(h.Body))
 	}
 
 	return builder.String()
