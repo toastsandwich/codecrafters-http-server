@@ -27,9 +27,9 @@ func (h HTTPResp) sMap() string {
 	return str
 }
 
-func (h *HTTPResp) SetHeader(key, value string) {
+func (h *HTTPResp) SetHeader(key string, value any) {
 	if h.Headers == nil {
 		h.Headers = make(map[string]string)
 	}
-	h.Headers[key] = value
+	h.Headers[key] = fmt.Sprintf("%v", value)
 }
