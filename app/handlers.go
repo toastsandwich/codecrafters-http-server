@@ -17,7 +17,7 @@ func EncodingMiddleware(h HandlerFunc) HandlerFunc {
 			slc := strings.Split(ae.(string), ", ")
 			v := []string{}
 			for _, s := range slc {
-				if !strings.Contains(s, "invalid-encoding") {
+				if strings.Contains(s, "gzip") {
 					v = append(v, s)
 				}
 			}
