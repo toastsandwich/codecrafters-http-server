@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io/fs"
 	"net"
 	"os"
 	"strings"
@@ -15,8 +17,13 @@ func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
-	// Uncomment this block to pass the first stage
-	//
+	var directory string
+	flag.StringVar(&directory, "directory", "/tmp/", "directory")
+
+	flag.Parse()
+
+	fs := os.DirFS(directory)
+
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
@@ -29,11 +36,11 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConn(conn)
+		go handleConn(conn, fs)
 	}
 }
 
-func handleConn(conn net.Conn) {
+func handleConn(conn net.Conn, fs fs.FS) {
 	// get the req
 	req := make([]byte, 1024)
 	n, err := conn.Read(req)
@@ -68,10 +75,37 @@ func handleConn(conn net.Conn) {
 
 		resp_t.SetHeader("Content-Type", "text/plain")
 		resp_t.SetHeader("Content-Length", fmt.Sprintf("%d", len(resp_t.Body)))
+	} else if url := strings.Split(req_t.Target, "/"); url[1] == "files" {
+		filename := url[2]
+		buf, err := readFile(filename, fs)
+		if err != nil && err.Error() == "file not found" {
+			resp_t.Status = 404
+			resp_t.Phrase = "Not Found"
+		} else {
+			resp_t.Status = 200
+			resp_t.Phrase = "OK"
+
+			resp_t.Body = string(buf)
+			resp_t.SetHeader("Content-Type", "application/octet-stream")
+			resp_t.SetHeader("Content-Length", fmt.Sprintf("%d", len(buf)))
+		}
 	} else {
 		resp_t.Status = 404
 		resp_t.Phrase = "Not Found"
 	}
 	resp := resp_t.Format()
 	conn.Write([]byte(resp))
+}
+
+func readFile(filename string, fs fs.FS) ([]byte, error) {
+	f, err := fs.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("file not found")
+	}
+	buf := make([]byte, 4096)
+	n, err := f.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf[:n], nil
 }
