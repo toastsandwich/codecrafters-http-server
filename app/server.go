@@ -6,18 +6,19 @@ import (
 	"io/fs"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports above (feel free to remove this!)
 var _ = net.Listen
 var _ = os.Exit
+var directory string
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
-	var directory string
 	flag.StringVar(&directory, "directory", "/tmp/", "directory")
 
 	flag.Parse()
@@ -77,17 +78,10 @@ func handleConn(conn net.Conn, fs fs.FS) {
 		resp_t.SetHeader("Content-Length", fmt.Sprintf("%d", len(resp_t.Body)))
 	} else if url := strings.Split(req_t.Target, "/"); url[1] == "files" {
 		filename := url[2]
-		buf, err := readFile(filename, fs)
-		if err != nil && err.Error() == "file not found" {
-			resp_t.Status = 404
-			resp_t.Phrase = "Not Found"
-		} else {
-			resp_t.Status = 200
-			resp_t.Phrase = "OK"
-
-			resp_t.Body = string(buf)
-			resp_t.SetHeader("Content-Type", "application/octet-stream")
-			resp_t.SetHeader("Content-Length", fmt.Sprintf("%d", len(buf)))
+		if req_t.Method == "GET" {
+			resp_t = getFile(filename, fs)
+		} else if req_t.Method == "POST" {
+			resp_t = postFile(filename, req_t.Body)
 		}
 	} else {
 		resp_t.Status = 404
@@ -95,6 +89,47 @@ func handleConn(conn net.Conn, fs fs.FS) {
 	}
 	resp := resp_t.Format()
 	conn.Write([]byte(resp))
+}
+
+func getFile(filename string, fs fs.FS) HTTPResp {
+	var resp_t HTTPResp = HTTPResp{
+		Version: "HTTP/1.1",
+	}
+	buf, err := readFile(filename, fs)
+	if err != nil && err.Error() == "file not found" {
+		resp_t.Status = 404
+		resp_t.Phrase = "Not Found"
+	} else {
+		resp_t.Status = 200
+		resp_t.Phrase = "OK"
+
+		resp_t.Body = string(buf)
+		resp_t.SetHeader("Content-Type", "application/octet-stream")
+		resp_t.SetHeader("Content-Length", fmt.Sprintf("%d", len(buf)))
+	}
+	return resp_t
+}
+
+func postFile(filename, data string) HTTPResp {
+	var resp_t HTTPResp = HTTPResp{
+		Version: "HTTP/1.1",
+	}
+	filepath := filepath.Join(directory, filename)
+	f, err := os.Create(filepath)
+	if err != nil {
+		resp_t.Status = 500
+		resp_t.Phrase = "Internal Server Error"
+		return resp_t
+	}
+	_, err = f.WriteString(data)
+	if err != nil {
+		resp_t.Status = 500
+		resp_t.Phrase = "Internal Server Error"
+		return resp_t
+	}
+	resp_t.Status = 201
+	resp_t.Phrase = "Created"
+	return resp_t
 }
 
 func readFile(filename string, fs fs.FS) ([]byte, error) {
