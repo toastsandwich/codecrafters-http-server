@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // http response struct
 type HTTPResp struct {
@@ -15,16 +18,31 @@ type HTTPResp struct {
 
 // \r\n is crlf which marks an end
 func (h HTTPResp) Format() string {
-	return fmt.Sprintf("%s %d %s\r\n%s\r\n%s", h.Version, h.Status, h.Phrase, h.sMap(), h.Body)
-}
+	// Use strings.Builder for more efficient string concatenation
+	var builder strings.Builder
 
-func (h HTTPResp) sMap() string {
-	var str string
-	for k, v := range h.Headers {
-		str += k + ": " + v
-		str += "\r\n"
+	// Write status line
+	builder.WriteString(fmt.Sprintf("%s %d %s\r\n", h.Version, h.Status, h.Phrase))
+
+	// Write headers
+	if len(h.Headers) > 0 {
+		for k, v := range h.Headers {
+			builder.WriteString(k)
+			builder.WriteString(": ")
+			builder.WriteString(v)
+			builder.WriteString("\r\n")
+		}
 	}
-	return str
+
+	// Add empty line between headers and body
+	builder.WriteString("\r\n")
+
+	// Add body if it exists
+	if h.Body != "" {
+		builder.WriteString(h.Body)
+	}
+
+	return builder.String()
 }
 
 func (h *HTTPResp) SetHeader(key string, value any) {
