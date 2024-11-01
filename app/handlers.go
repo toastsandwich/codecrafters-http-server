@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type HandlerFunc func(HTTPReq, *HTTPResp) error
@@ -12,8 +13,15 @@ type Middleware func(HandlerFunc) HandlerFunc
 func EncodingMiddleware(h HandlerFunc) HandlerFunc {
 	return func(req HTTPReq, res *HTTPResp) error {
 		ae := req.Header.Get("Accept-Encoding")
-		if ae != nil && ae.(string) != "invalid-encoding" {
-			res.SetHeader("Content-Encoding", ae.(string))
+		if ae != nil {
+			slc := strings.Split(ae.(string), ", ")
+			v := []string{}
+			for _, s := range slc {
+				if !strings.Contains(s, "invalid-encoding") {
+					v = append(v, s)
+				}
+			}
+			res.SetHeader("Content-Encoding", strings.Join(v, ", "))
 		}
 		return h(req, res)
 	}
